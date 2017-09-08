@@ -57,6 +57,10 @@ public class MainActivity extends AppCompatActivity {
                 startService(i);
             }
         });
+
+        if (accessToken != null) {
+            startButton.setEnabled(true);
+        }
     }
 
     @Override
