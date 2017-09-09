@@ -17,6 +17,7 @@ import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v7.app.NotificationCompat;
 
+import com.facebook.FacebookRequestError;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
 
@@ -31,6 +32,7 @@ public class StalkService extends Service {
 
     private static final String KEY_LAST_POST_ID = "LAST_POST_ID";
     public static final String KEY_LAST_SYNC = "LAST_SYNC";
+    public static final String KEY_LAST_ERROR = "LAST_ERROR";
 
     private String lastPostId;
     private Handler handler = new Handler();
@@ -44,9 +46,13 @@ public class StalkService extends Service {
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
         lastPostId = PreferenceManager.getDefaultSharedPreferences(this).getString(KEY_LAST_POST_ID, null);
 
+        Intent startMainActivity = new Intent(this, MainActivity.class);
+        PendingIntent pendingMainIntent = PendingIntent.getActivity(this, 0, startMainActivity, PendingIntent.FLAG_UPDATE_CURRENT);
+
         startForeground(100, new Notification.Builder(this)
                 .setSmallIcon(R.drawable.com_facebook_favicon_blue)
                 .setContentTitle("STALKER RUNNING")
+                .setContentIntent(pendingMainIntent)
                 .setOngoing(true)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .build());
@@ -64,7 +70,9 @@ public class StalkService extends Service {
             GraphRequest.newGraphPathRequest(MainActivity.accessToken, "lesquatretemps/posts?limit=1", new GraphRequest.Callback() {
                 @Override
                 public void onCompleted(GraphResponse response) {
-                    if (response.getError() == null) {
+                    FacebookRequestError requestError = response.getError();
+
+                    if (requestError == null) {
                         try {
                             JSONObject responseObject = response.getJSONObject();
                             JSONObject lastPost = (JSONObject) ((JSONArray) responseObject.get("data")).get(0);
@@ -101,8 +109,10 @@ public class StalkService extends Service {
                         }
                     }
 
-                    PreferenceManager.getDefaultSharedPreferences(StalkService.this)
-                            .edit().putLong(KEY_LAST_SYNC, System.currentTimeMillis()).apply();
+                    PreferenceManager.getDefaultSharedPreferences(StalkService.this).edit()
+                            .putString(KEY_LAST_ERROR, requestError != null ? requestError.getErrorMessage() : null)
+                            .putLong(KEY_LAST_SYNC, System.currentTimeMillis())
+                            .apply();
 
                     handler.postDelayed(checkLastPost, 5 * 60 * 1000);
                 }
