@@ -2,10 +2,12 @@ package aracne.name.stalk4temps;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
@@ -13,6 +15,9 @@ import com.facebook.FacebookCallback;
 import com.facebook.FacebookException;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
+
+import java.util.Date;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -61,6 +66,17 @@ public class MainActivity extends AppCompatActivity {
         if (accessToken != null) {
             startButton.setEnabled(true);
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        ((TextView) findViewById(R.id.syncTextView)).setText(String.format(Locale.getDefault(),
+                "Last sync: %1$s", new Date(PreferenceManager.getDefaultSharedPreferences(this).getLong(StalkService.KEY_LAST_SYNC, 0l))));
+
+        ((TextView) findViewById(R.id.statusTextView)).setText(StalkService.isServiceRunning(this) ?
+                "Service running" : "Service NOT running");
     }
 
     @Override

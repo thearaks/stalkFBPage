@@ -1,5 +1,7 @@
 package aracne.name.stalk4temps;
 
+import android.app.ActivityManager;
+import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -22,10 +24,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.List;
+
 
 public class StalkService extends Service {
 
     private static final String KEY_LAST_POST_ID = "LAST_POST_ID";
+    public static final String KEY_LAST_SYNC = "LAST_SYNC";
 
     private String lastPostId;
     private Handler handler = new Handler();
@@ -40,6 +45,7 @@ public class StalkService extends Service {
         lastPostId = PreferenceManager.getDefaultSharedPreferences(this).getString(KEY_LAST_POST_ID, null);
 
         startForeground(100, new Notification.Builder(this)
+                .setSmallIcon(R.drawable.com_facebook_favicon_blue)
                 .setContentTitle("STALKER RUNNING")
                 .setOngoing(true)
                 .setCategory(Notification.CATEGORY_SERVICE)
@@ -84,6 +90,8 @@ public class StalkService extends Service {
                                         .setContentIntent(pendingFacebookIntent)
                                         .setSound(defaultSoundUri)
                                         .setLights(Color.rgb(255, 0, 0), 500, 500)
+                                        .setVibrate(new long[]{500, 1000, 500, 1000, 500, 1000, 500, 1000, 500})
+                                        .setCategory(NotificationCompat.CATEGORY_REMINDER)
                                         .build());
 
                             }
@@ -93,10 +101,25 @@ public class StalkService extends Service {
                         }
                     }
 
+                    PreferenceManager.getDefaultSharedPreferences(StalkService.this)
+                            .edit().putLong(KEY_LAST_SYNC, System.currentTimeMillis()).apply();
+
                     handler.postDelayed(checkLastPost, 5 * 60 * 1000);
                 }
             }).executeAsync();
         }
+    }
+
+    public static boolean isServiceRunning(Context context) {
+        final ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        final List<ActivityManager.RunningServiceInfo> services = activityManager.getRunningServices(Integer.MAX_VALUE);
+
+        for (ActivityManager.RunningServiceInfo runningServiceInfo : services) {
+            if (runningServiceInfo.service.getClassName().equals(StalkService.class.getName())){
+                return true;
+            }
+        }
+        return false;
     }
 
 }
