@@ -8,6 +8,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -83,9 +84,6 @@ public class StalkService extends Service {
                                 PreferenceManager.getDefaultSharedPreferences(StalkService.this)
                                         .edit().putString(KEY_LAST_POST_ID, lastPostId).apply();
 
-                                Intent openFacebookIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.facebook.com/lesquatretemps/"));
-                                PendingIntent pendingFacebookIntent = PendingIntent.getActivity(StalkService.this, 0, openFacebookIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
                                 Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
                                 NotificationManager notificationManager =
@@ -95,7 +93,7 @@ public class StalkService extends Service {
                                         .setContentTitle("NEW POST!")
                                         .setContentText((CharSequence) lastPost.get("message"))
                                         .setStyle(new android.support.v4.app.NotificationCompat.BigTextStyle().bigText((CharSequence) lastPost.get("message")))
-                                        .setContentIntent(pendingFacebookIntent)
+                                        .setContentIntent(getFacebookPendingIntent(StalkService.this))
                                         .setSound(defaultSoundUri)
                                         .setLights(Color.rgb(255, 0, 0), 500, 500)
                                         .setVibrate(new long[]{500, 1000, 500, 1000, 500, 1000, 500, 1000, 500})
@@ -118,6 +116,14 @@ public class StalkService extends Service {
                 }
             }).executeAsync();
         }
+    }
+
+    public static PendingIntent getFacebookPendingIntent(Context context) {
+        Intent openFacebookIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("fb://page/lesquatretemps"));
+        if (context.getPackageManager().queryIntentActivities(openFacebookIntent, PackageManager.MATCH_DEFAULT_ONLY).size() == 0) {
+            openFacebookIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.facebook.com/lesquatretemps"));
+        }
+        return PendingIntent.getActivity(context, 0, openFacebookIntent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
     public static boolean isServiceRunning(Context context) {
